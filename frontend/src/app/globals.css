@@ -1,26 +1,197 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. Flat colours only: no gradients, no coloured shadows, no emoji.
+ *
+ * Light theme only: white background everywhere (main dashboard and the
+ * "under the hood" explainer). Use token classes (bg-surface, text-ink, ...)
+ * instead of hard-coded colours.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f5f2;
+  --surface-3: #ecebe6;
+  --border: #e5e3dd;
+  --border-strong: #cfccc3;
+  --text: #16181f;
+  --text-muted: #5f6370;
+  --text-faint: #8d909c;
+  --accent: #c4552f;
+  --accent-soft: #fbece6;
+  --on-accent: #ffffff;
+  --ok: #2c7a4b;
+  --ok-soft: #e7f3ec;
+  --ok-line: #b5d8c3;
+  --warn: #9a6a0b;
+  --warn-soft: #fbf1dc;
+  --warn-line: #e6cf9b;
+  --bad: #b8332f;
+  --bad-soft: #fbe9e8;
+  --bad-line: #e8b9b7;
+  --info: #2f5f9e;
+  --info-soft: #e8eff8;
+  --info-line: #b7cbe6;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Reusable primitives ------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.card-flat {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/*
+ * Display numerals and headings. The class name is historical (it used to be
+ * a serif); it now applies Space Grotesk.
+ */
+.num-serif {
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.eyebrow {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--surface-3);
+  font-size: 11.5px;
+  line-height: 20px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* Solid, soft tags: tinted fill, mid-tone text, no outline. */
+.chip-accent { background: var(--accent-soft); color: var(--accent); }
+.chip-ok { background: var(--ok-soft); color: var(--ok); }
+.chip-warn { background: var(--warn-soft); color: var(--warn); }
+.chip-bad { background: var(--bad-soft); color: var(--bad); }
+.chip-info { background: var(--info-soft); color: var(--info); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(0.92); }
+.btn-danger { color: var(--bad); border-color: var(--bad-line); }
+.btn-danger:hover:not(:disabled) { background: var(--bad-soft); }
+
+/* Form controls shared by the main dashboard */
+.field {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.field:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+.field[aria-invalid="true"] { border-color: var(--bad); }
+.field-label { display: block; margin-bottom: 4px; font-size: 12.5px; color: var(--text-muted); }
+.field-error { margin-top: 4px; font-size: 12px; color: var(--bad); }
+
+.table-base { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.table-base th {
+  text-align: left; font-weight: 500; font-size: 12px; color: var(--text-muted);
+  padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+}
+.table-base td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table-base tbody tr:hover { background: var(--surface-2); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Thin scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
