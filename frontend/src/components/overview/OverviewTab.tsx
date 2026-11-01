@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { TabProps } from "@/lib/types";
+import { Explainer } from "../Explainer";
 import { InfoTip } from "../InfoTip";
+import { DbmsRoles } from "./DbmsRoles";
 import { ErDiagram } from "./ErDiagram";
 import { layoutEr, type ErMode, type ErSelection } from "./erLayout";
 import { RulesGlance } from "./RulesGlance";
@@ -24,6 +26,17 @@ export function OverviewTab({ schema, live, nav }: TabProps) {
 
   return (
     <div className="space-y-6">
+      <Explainer
+        title="Start here: what is a DBMS?"
+        tryThis="Click a line in the diagram below, then follow the four jobs of a DBMS one by one."
+      >
+        A database management system (DBMS) is the program that sits between your app and the data. Staffly uses MySQL, and its
+        employee data is split into {schema.stats.tables} linked tables. This tour shows how MySQL stores, protects and
+        searches that data.
+      </Explainer>
+
+      <DbmsRoles onGo={nav.goTo} />
+
       <StatCards schema={schema} live={live} />
 
       <Section

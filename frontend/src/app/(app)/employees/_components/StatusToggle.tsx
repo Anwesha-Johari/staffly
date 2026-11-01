@@ -29,6 +29,7 @@ export function StatusToggle({
     <div>
       <form className="inline-flex flex-wrap items-center gap-2">
         <ConfirmButton
+          key={mode}
           label={deactivating ? "Deactivate" : "Reactivate"}
           confirmLabel={deactivating ? "Yes, deactivate" : "Yes, reactivate"}
           message={

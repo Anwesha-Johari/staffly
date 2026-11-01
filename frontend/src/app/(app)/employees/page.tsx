@@ -246,7 +246,7 @@ async function EmployeesContent({ searchParams }: { searchParams: SearchParams }
             <p>
               Showing {from}-{to} of {list.total}
             </p>
-            <Link href="/under-the-hood#library" className="text-accent underline underline-offset-2">
+            <Link href="/under-the-hood#plans" className="text-accent underline underline-offset-2">
               See how this join works
             </Link>
           </div>

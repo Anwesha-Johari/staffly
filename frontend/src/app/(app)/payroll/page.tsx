@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { InfoTip } from '@/components/InfoTip';
 import {
@@ -50,6 +51,8 @@ export default function PayrollPage({ searchParams }: { searchParams: SearchPara
 
 async function PayrollContent({ searchParams }: { searchParams: SearchParams }) {
   await requireRoles(['Admin', 'HR']);
+  // "This month" depends on the request time, so this must never be prerendered.
+  await connection();
   const params = await searchParams;
 
   // Month filter: "all", a valid month, or (default and fallback) this month.

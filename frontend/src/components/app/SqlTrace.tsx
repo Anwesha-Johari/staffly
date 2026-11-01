@@ -91,7 +91,7 @@ export function SqlTrace({
 
       <p className="border-t border-line px-4 py-2.5 text-[12px] text-muted">
         Want the theory behind these?{" "}
-        <Link href="/under-the-hood#library" className="text-accent underline underline-offset-2">
+        <Link href="/under-the-hood#plans" className="text-accent underline underline-offset-2">
           Browse the SQL library
         </Link>
         .

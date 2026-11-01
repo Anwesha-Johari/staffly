@@ -147,3 +147,64 @@ export async function explainLibraryQuery(id: string): Promise<ExplainResult> {
     clearTimeout(timer);
   }
 }
+
+export type RunResult =
+  | { ok: true; columns: string[]; rows: Record<string, unknown>[]; rowCount: number; durationMs: number }
+  | { ok: false; reason: string };
+
+const MAX_RUN_ROWS = 10;
+
+/**
+ * Run a SELECT from the built-in library with its sample parameters, inside a
+ * read-only transaction that is always rolled back. Only an id is accepted,
+ * password_hash values are never returned, and at most 10 rows come back.
+ */
+export async function runLibraryQuery(id: string): Promise<RunResult> {
+  const query = LIBRARY.find((q) => q.id === id);
+  if (!query) return { ok: false, reason: 'Unknown query id' };
+  const sql = selectOnly(toQuestionMarks(query.sql));
+  if (!sql) return { ok: false, reason: 'This statement changes data, so the dashboard does not run it here' };
+  if ((sql.match(/\?/g) ?? []).length !== query.params.length) {
+    return { ok: false, reason: 'Sample parameters do not match the statement placeholders' };
+  }
+
+  let conn: Awaited<ReturnType<typeof pool.getConnection>> | undefined;
+  let inTx = false;
+  try {
+    const c = await pool.getConnection();
+    conn = c;
+    await c.query('START TRANSACTION READ ONLY');
+    inTx = true;
+    const start = performance.now();
+    const [rows] = await c.query<RowDataPacket[]>({ sql, values: query.params, timeout: STATEMENT_TIMEOUT_MS });
+    const durationMs = Math.round((performance.now() - start) * 100) / 100;
+    recordQuery({
+      sql,
+      params: query.params,
+      durationMs,
+      rowCount: rows.length,
+      operation: detectOperation(sql),
+      concept: 'Query library: run with sample values',
+    });
+
+    const columns = rows[0] ? Object.keys(rows[0]) : [];
+    const shown = rows.slice(0, MAX_RUN_ROWS).map((r) => {
+      const out: Record<string, unknown> = {};
+      for (const k of Object.keys(r)) out[k] = /password|hash/i.test(k) ? '[hidden]' : r[k];
+      return out;
+    });
+    return { ok: true, columns, rows: shown, rowCount: rows.length, durationMs };
+  } catch (error) {
+    return { ok: false, reason: failureReason(error) };
+  } finally {
+    if (conn) {
+      try {
+        if (inTx) await conn.query('ROLLBACK');
+      } catch {
+        conn.destroy();
+        conn = undefined;
+      }
+      conn?.release();
+    }
+  }
+}

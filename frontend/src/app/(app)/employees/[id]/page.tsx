@@ -185,7 +185,7 @@ async function EmployeeDetailContent({ params }: { params: Params }) {
             <Row label="Record created">{detail.created_at ?? <span className="text-faint">-</span>}</Row>
           </dl>
           <p className="mt-3 text-[12.5px]">
-            <Link href="/under-the-hood#library" className="text-accent underline underline-offset-2">
+            <Link href="/under-the-hood#plans" className="text-accent underline underline-offset-2">
               See how this join works
             </Link>
           </p>

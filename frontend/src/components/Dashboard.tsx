@@ -6,12 +6,19 @@ import type { DashboardNav, LiveState, SchemaModel, TabId, TabProps } from "@/li
 import { InfoTip } from "./InfoTip";
 import { OverviewTab } from "./overview/OverviewTab";
 import { TablesTab } from "./tables/TablesTab";
-import { LibraryTab } from "./library/LibraryTab";
 import { PlansTab } from "./plans/PlansTab";
-import { WhyTab } from "./why/WhyTab";
 import { TransactionsTab } from "./transactions/TransactionsTab";
+import { LiveTab } from "./live/LiveTab";
 
-const TAB_IDS: TabId[] = ["overview", "tables", "library", "plans", "why", "transactions"];
+/** The learning path. Each step is one idea about how a DBMS works. */
+const STEPS: { id: TabId; label: string; short: string }[] = [
+  { id: "overview", label: "How it fits together", short: "Schema and relationships" },
+  { id: "tables", label: "Tables", short: "Rows, columns and keys" },
+  { id: "plans", label: "How a query runs", short: "Parse, optimise, execute" },
+  { id: "transactions", label: "Transactions", short: "Commit, rollback, locks" },
+  { id: "live", label: "Live activity", short: "Watch the engine work" },
+];
+const TAB_IDS = STEPS.map((s) => s.id);
 
 export function Dashboard({ schema }: { schema: SchemaModel }) {
   const [tab, setTab] = useState<TabId>("overview");
@@ -31,14 +38,15 @@ export function Dashboard({ schema }: { schema: SchemaModel }) {
     fetch("/api/live", { cache: "no-store" })
       .then((r) => r.json() as Promise<LiveState>)
       .then((s) => !cancelled && setLive(s))
-      .catch(() =>
-        !cancelled &&
-        setLive({
-          connected: false,
-          database: schema.database,
-          reason: "Live endpoint unreachable.",
-          checkedAt: new Date().toISOString(),
-        }),
+      .catch(
+        () =>
+          !cancelled &&
+          setLive({
+            connected: false,
+            database: schema.database,
+            reason: "Live endpoint unreachable.",
+            checkedAt: new Date().toISOString(),
+          }),
       );
     return () => {
       cancelled = true;
@@ -64,22 +72,18 @@ export function Dashboard({ schema }: { schema: SchemaModel }) {
   };
 
   const props: TabProps = { schema, live, nav, selectedTable, selectedQueryId };
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: "overview", label: "Overview & ER" },
-    { id: "tables", label: `${schema.stats.tables} tables` },
-    { id: "library", label: "Query library" },
-    { id: "plans", label: "Query plans" },
-    { id: "why", label: "Why can't I...?" },
-    { id: "transactions", label: "Transactions" },
-  ];
+  const index = STEPS.findIndex((s) => s.id === tab);
+  const next = STEPS[index + 1];
+  const prev = STEPS[index - 1];
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 pb-20 pt-6">
-      <header className="flex flex-wrap items-center justify-between gap-3 pb-5">
+    <div className="mx-auto w-full max-w-[1200px] px-6 pb-20 pt-6">
+      <header className="flex flex-wrap items-center justify-between gap-3 pb-6">
         <div>
-          <h1 className="num-serif text-[22px] leading-none text-ink">Under the hood</h1>
-          <p className="mt-1 text-[12.5px] text-muted">How the database behind Staffly works.</p>
+          <h1 className="num-serif text-[24px] leading-none text-ink">Under the hood</h1>
+          <p className="mt-1.5 text-[13.5px] text-muted">
+            A guided tour of how a database management system (DBMS) works, using the Staffly employee database.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/" className="btn">
@@ -89,39 +93,68 @@ export function Dashboard({ schema }: { schema: SchemaModel }) {
         </div>
       </header>
 
-      <nav aria-label="Sections" className="border-b border-line">
-        <ul role="tablist" className="-mb-px flex flex-wrap gap-x-1">
-          {tabs.map((t) => {
-            const active = tab === t.id;
+      <nav aria-label="Learning path">
+        <ol role="tablist" className="grid gap-2 sm:grid-cols-5">
+          {STEPS.map((s, i) => {
+            const active = tab === s.id;
             return (
-              <li key={t.id} role="presentation">
+              <li key={s.id} role="presentation">
                 <button
                   role="tab"
                   aria-selected={active}
-                  aria-controls={`panel-${t.id}`}
-                  onClick={() => goTo(t.id)}
-                  className={`border-b-2 px-4 py-3 text-[15px] transition-colors ${
-                    active
-                      ? "border-accent text-ink"
-                      : "border-transparent text-muted hover:text-ink"
+                  aria-controls={`panel-${s.id}`}
+                  onClick={() => goTo(s.id)}
+                  className={`flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${
+                    active ? "bg-accent-soft" : "bg-surface-2 hover:bg-surface-3"
                   }`}
                 >
-                  {t.label}
+                  <span
+                    className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-medium ${
+                      active ? "bg-accent" : "bg-surface text-muted"
+                    }`}
+                    style={active ? { color: "var(--on-accent)" } : undefined}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0">
+                    <span className={`block text-[14px] font-medium leading-tight ${active ? "text-accent" : "text-ink"}`}>
+                      {s.label}
+                    </span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-muted">{s.short}</span>
+                  </span>
                 </button>
               </li>
             );
           })}
-        </ul>
+        </ol>
       </nav>
 
       <main id={`panel-${tab}`} role="tabpanel" className="pt-6">
         {tab === "overview" && <OverviewTab {...props} />}
         {tab === "tables" && <TablesTab {...props} />}
-        {tab === "library" && <LibraryTab {...props} />}
         {tab === "plans" && <PlansTab {...props} />}
-        {tab === "why" && <WhyTab {...props} />}
         {tab === "transactions" && <TransactionsTab {...props} />}
+        {tab === "live" && <LiveTab {...props} />}
       </main>
+
+      <footer className="mt-10 flex items-center justify-between border-t border-line pt-5">
+        {prev ? (
+          <button className="btn" onClick={() => goTo(prev.id)}>
+            Back: {prev.label}
+          </button>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <button className="btn btn-primary" onClick={() => goTo(next.id)}>
+            Next: {next.label}
+          </button>
+        ) : (
+          <Link href="/" className="btn btn-primary">
+            Try it in the employee dashboard
+          </Link>
+        )}
+      </footer>
     </div>
   );
 }
@@ -129,29 +162,27 @@ export function Dashboard({ schema }: { schema: SchemaModel }) {
 function ConnectionBadge({ live, schema }: { live: LiveState | null; schema: SchemaModel }) {
   const state = live === null ? "checking" : live.connected ? "live" : "static";
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-[12.5px]">
+    <div className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-[12.5px]">
       <span
         aria-hidden
-        className={`h-2 w-2 rounded-full ${
-          state === "live" ? "bg-ok" : state === "static" ? "bg-warn" : "bg-faint"
-        }`}
+        className={`h-2 w-2 rounded-full ${state === "live" ? "bg-ok" : state === "static" ? "bg-warn" : "bg-faint"}`}
       />
       <span className="text-ink">
-        {state === "live" && `Live: ${live?.database}`}
-        {state === "static" && "Static mode"}
+        {state === "live" && `Live database: ${live?.database}`}
+        {state === "static" && "No database connected"}
         {state === "checking" && "Checking database"}
       </span>
-      <span className="text-muted">
-        {state === "live" && live?.serverVersion ? `MySQL ${live.serverVersion}` : `schema from ${schema.sourceFile}`}
-      </span>
-      <InfoTip title="Live vs static" align="end">
+      <InfoTip title="Live or static" align="end">
         {state === "live" ? (
-          <>The dashboard is connected to MySQL. Row counts are exact <code>COUNT(*)</code> values and query plans come from real <code>EXPLAIN</code> output.</>
+          <>
+            Connected to MySQL {live?.serverVersion}. Row counts, sample rows and real <code>EXPLAIN</code> output come from the
+            running database.
+          </>
         ) : (
           <>
-            No MySQL server was reachable{live?.reason ? ` (${live.reason})` : ""}. The schema, ER diagram and constraints
-            are parsed from <code>{schema.sourceFile}</code>. Row counts and plans are illustrative until a database is
-            connected via <code>DB_HOST</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>, <code>DB_NAME</code>.
+            No MySQL server is reachable{live?.reason ? ` (${live.reason})` : ""}. Everything about the schema is read from{" "}
+            <code>{schema.sourceFile}</code>, so this tour still works. Start a database (see the README) to see real rows and
+            plans.
           </>
         )}
       </InfoTip>

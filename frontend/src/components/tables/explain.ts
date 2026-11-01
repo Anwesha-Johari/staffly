@@ -1,4 +1,4 @@
-import type { ForeignKey } from "@/lib/types";
+import type { Column, ForeignKey, Table } from "@/lib/types";
 
 /* Pure helpers that turn parsed schema facts into plain English. */
 
@@ -140,4 +140,32 @@ export function fkActionText(kind: "delete" | "update", fk: ForeignKey): string 
     default:
       return `${subject} is refused while ${child} still reference it. The statement fails with error 1451 and nothing changes.`;
   }
+}
+
+/** One plain-English phrase for what a column holds, built from its definition. */
+export function describeColumn(table: Table, col: Column): string {
+  if (col.generatedExpr) return `Calculated by MySQL: ${stripOuterParens(col.generatedExpr)}. The app never writes it.`;
+  if (col.isPrimary && col.autoIncrement) return "Unique number for each row, filled in automatically.";
+  if (col.isPrimary) return "Unique value for each row.";
+  if (col.fk) {
+    const fk = table.foreignKeys.find((f) => f.columns.includes(col.name));
+    const where = `${col.fk.refTable}.${col.fk.refColumn}`;
+    if (fk?.selfReference) return `Points to another row of this table (${where}).${col.nullable ? " Optional." : ""}`;
+    return `Points to a row in ${col.fk.refTable} (${where}).${col.nullable ? " Optional." : " Required."}`;
+  }
+  const check = table.checks.find((c) => new RegExp(`\\b${col.name}\\b`).test(c.expression));
+  const t = col.type.toUpperCase();
+  let what = "Text";
+  if (/^(INT|BIGINT|SMALLINT|TINYINT)/.test(t)) what = "Whole number";
+  else if (/^DECIMAL|^NUMERIC|^FLOAT|^DOUBLE/.test(t)) what = "Amount with decimals";
+  else if (/^DATETIME|^TIMESTAMP/.test(t)) what = "Date and time";
+  else if (/^DATE/.test(t)) what = "Date";
+  else if (/^TIME/.test(t)) what = "Time of day";
+  const extras: string[] = [];
+  if (col.isUnique) extras.push("no two rows may share it");
+  if (!col.nullable) extras.push("required");
+  else extras.push("optional");
+  if (col.defaultValue && col.defaultValue !== "NULL") extras.push(`defaults to ${col.defaultValue.replace(/'/g, "")}`);
+  if (check) extras.push("limited by a CHECK rule");
+  return `${what}; ${extras.join(", ")}.`;
 }

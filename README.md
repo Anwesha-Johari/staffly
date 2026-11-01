@@ -1,8 +1,8 @@
 # Staffly
 
-Staffly is an employee management system built on MySQL. It has a Python backend (`backend/employee_backend.py`) that implements the business operations (employees, attendance, leave, payroll, user accounts with role-based access), a Streamlit app on top of it, and a Next.js dashboard, "Staffly, under the hood", that uses the same database schema to teach how a relational DBMS works.
+Staffly is an employee management system built on MySQL. It has a Python backend (`backend/employee_backend.py`) that implements the business operations (employees, attendance, leave, payroll, user accounts with role-based access), a Streamlit app on top of it, and a Next.js app with two parts: an employee dashboard for entering and managing data, and "Under the hood", a guided tour that uses the same database schema to teach how a relational DBMS works.
 
-The dashboard parses `database/schemas.sql` at render time, so its tables, columns, keys, constraints and ER diagram always match the DDL. It can optionally connect to a live MySQL server. It follows one honesty rule: anything that comes from a live database (row counts, real `EXPLAIN` output, results of a transaction experiment) is labelled as live, and anything that is static or illustrative (the schema read from the file, hand-written query plans, scripted scenarios) is labelled as such. When no database is reachable the dashboard runs in a clearly marked static mode instead of faking live data.
+The tour parses `database/schemas.sql` at render time, so its tables, columns, keys, constraints and ER diagram always match the DDL. It can optionally connect to a live MySQL server. It follows one honesty rule: anything that comes from a live database (row counts, real `EXPLAIN` output, results of a transaction experiment) is labelled as live, and anything that is static or illustrative (the schema read from the file, hand-written query plans, scripted scenarios) is labelled as such. When no database is reachable the dashboard runs in a clearly marked static mode instead of faking live data.
 
 ## Repository map
 
@@ -19,7 +19,8 @@ The dashboard parses `database/schemas.sql` at render time, so its tables, colum
 | `database/demo_seed.sql` | Fake demo data and demo accounts for local development only. See [database/README.md](database/README.md). |
 | `database/emsDB.sql` | Scratch queries (`SELECT *`, `SHOW TABLES`, `DESCRIBE`) for inspecting the database by hand. |
 | `tests/` | 24 standalone Python scripts that exercise the backend functions (see "Tests"). |
-| `frontend/` | Next.js dashboard. See [frontend/README.md](frontend/README.md). |
+| `frontend/` | Next.js app: employee dashboard and the under-the-hood tour. See [frontend/README.md](frontend/README.md). |
+| `scripts/dev-db.sh` | Starts, stops and resets an isolated local MySQL (port 3307) with the schema and demo data. |
 
 ## Running it
 
@@ -81,7 +82,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000 for the employee dashboard (needs MySQL, no sign-in for now) or http://localhost:3000/under-the-hood for the explainer, which works with no database at all (static mode). To turn on live mode, copy `frontend/.env.example` to `frontend/.env.local` and fill in the `DB_*` values; the file is read by Next.js and is git-ignored, while `.env.example` is committed. Details are in [frontend/README.md](frontend/README.md). 
+Open http://localhost:3000 for the employee dashboard (needs MySQL, no sign-in for now) or http://localhost:3000/under-the-hood for the tour, which works with no database at all (static mode). For a ready-made local database, run `scripts/dev-db.sh start` from the repository root: it creates an isolated MySQL on port 3307 with the schema and demo data, and prints the settings to put in `frontend/.env.local`. To turn on live mode, copy `frontend/.env.example` to `frontend/.env.local` and fill in the `DB_*` values; the file is read by Next.js and is git-ignored, while `.env.example` is committed. Details are in [frontend/README.md](frontend/README.md). 
 
 ### Tests
 
@@ -97,15 +98,14 @@ Things to know before running them:
 - They assume accounts that already exist in that database: an Admin named `abc` (several scripts ask for its password with `input()`/`getpass`), an HR account `alice_hr_test` (created by `tests/test_create_hr_account.py`) and an employee account `david_test`.
 - `tests/test_login.py` temporarily disables the `david_test` account and re-enables it at the end.
 
-## How the dashboard maps to DBMS concepts
+## How the tour maps to DBMS concepts
 
-| Tab | Concepts it shows |
+| Step | Concepts it shows |
 | --- | --- |
-| Overview & ER | Relational model, entities and relationships, cardinality (1:1, 1:N, optional vs mandatory), primary and foreign keys, schema statistics, live vs static mode |
-| Tables | Columns and data types, NULL / DEFAULT / AUTO_INCREMENT, generated columns, primary and unique keys, secondary indexes, referential actions (`ON DELETE` / `ON UPDATE`), `CHECK` constraints, which tables reference which |
-| Query library | The real SQL issued by the backend functions, grouped by kind (lookup, join, aggregate, insert, update, search, auth), with parameterised queries and the concepts each one exercises |
-| Query plans | How the optimizer reaches rows: index lookup vs table scan, join order and nested-loop joins, access types. Hand-written plans derived from the declared indexes are labelled illustrative; with a live database the same query can be sent through `EXPLAIN` and the real output is labelled live |
-| Why can't I...? | Integrity enforcement: what happens when an operation violates a `CHECK`, unique key, foreign key, `NOT NULL` or generated-column rule (or triggers a referential action), which stage of statement processing stops it, and what the Python backend does first. Scenarios are scripted, and checked against the parsed DDL |
-| Transactions | Atomicity, commit and rollback, isolation between two sessions, and how failed statements affect a transaction (scripted scenarios based on InnoDB's documented behaviour, labelled as simulations, not a live trace) |
+| 1. How it fits together | What a DBMS does (store, enforce rules, answer queries, keep data safe), the relational model, entities and relationships, cardinality, primary and foreign keys, `CHECK` and unique rules |
+| 2. Tables | Columns and data types, NULL / DEFAULT / AUTO_INCREMENT, generated columns, primary and unique keys, secondary indexes, the B+tree behind an index, referential actions, and the rows really stored |
+| 3. How a query runs | Parse, resolve, optimise, execute and storage; index lookup vs table scan; join order; MySQL's real `EXPLAIN`; running the real queries the backend sends |
+| 4. Transactions | Atomicity, commit and rollback, row locks, lock waits, the compare-and-set guard that stops two reviewers overwriting each other, deadlocks and how InnoDB resolves them. Each story can be run for real on two live connections |
+| 5. Live activity | The SQL the employee dashboard really sends, how long each statement takes, and what each one does in plain English |
 
-Exact content of each tab, including which parts are live and which are illustrative, is stated in the UI itself.
+Each step says on screen which parts are live and which are illustrative.

@@ -2,7 +2,7 @@
 
 import type { Column, Table } from "@/lib/types";
 import { InfoTip } from "../InfoTip";
-import { stripOuterParens } from "./explain";
+import { describeColumn, stripOuterParens } from "./explain";
 
 function Chips({ table, col, onOpenTable }: { table: Table; col: Column; onOpenTable: (n: string) => void }) {
   const fk = table.foreignKeys.find((f) => f.columns.includes(col.name));
@@ -44,8 +44,9 @@ export function ColumnList({ table, onOpenTable }: { table: Table; onOpenTable: 
   return (
     <table className="w-full table-fixed border-collapse text-left text-[13px]">
       <colgroup>
-        <col style={{ width: "30%" }} />
-        <col style={{ width: "22%" }} />
+        <col style={{ width: "20%" }} />
+        <col style={{ width: "15%" }} />
+        <col style={{ width: "25%" }} />
         <col />
       </colgroup>
       <thead>
@@ -56,7 +57,7 @@ export function ColumnList({ table, onOpenTable }: { table: Table; onOpenTable: 
           <th scope="col" className="py-2 pr-3 font-normal">
             Type
           </th>
-          <th scope="col" className="py-2 font-normal">
+          <th scope="col" className="py-2 pr-3 font-normal">
             <span className="inline-flex items-center gap-1.5">
               Badges
               <InfoTip title="Badges" align="start">
@@ -64,6 +65,9 @@ export function ColumnList({ table, onOpenTable }: { table: Table; onOpenTable: 
                 value, AUTO counts up by itself, and GENERATED is computed from other columns.
               </InfoTip>
             </span>
+          </th>
+          <th scope="col" className="py-2 font-normal">
+            What it stores
           </th>
         </tr>
       </thead>
@@ -74,9 +78,10 @@ export function ColumnList({ table, onOpenTable }: { table: Table; onOpenTable: 
               {c.name}
             </th>
             <td className="mono break-words py-2.5 pr-3 text-muted">{c.type}</td>
-            <td className="py-2.5">
+            <td className="py-2.5 pr-3">
               <Chips table={table} col={c} onOpenTable={onOpenTable} />
             </td>
+            <td className="py-2.5 text-muted">{describeColumn(table, c)}</td>
           </tr>
         ))}
       </tbody>

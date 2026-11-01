@@ -1,89 +1,72 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { FkAction, SchemaModel, TabProps } from "@/lib/types";
-import { InfoTip } from "../InfoTip";
 import { readCheck } from "./checkText";
 import { Section } from "./Section";
 
 const DELETE_WORDS: Record<FkAction, string> = {
-  CASCADE: "deleting the parent deletes this row too",
+  CASCADE: "deleting the parent deletes these rows too",
   "SET NULL": "deleting the parent clears the link",
   RESTRICT: "deleting the parent is blocked",
   "NO ACTION": "deleting the parent is blocked",
   "SET DEFAULT": "rejected by InnoDB",
 };
 
-function Count({
-  n,
-  tone,
-  title,
-  align,
-  children,
-}: {
-  n: number;
-  tone: string;
-  title: string;
-  align?: "start" | "end";
-  children: ReactNode;
-}) {
-  if (n === 0) return <span className="chip">0</span>;
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`chip ${tone}`}>{n}</span>
-      <InfoTip title={title} align={align}>
-        {children}
-      </InfoTip>
-    </span>
-  );
-}
-
-const line = "mt-1.5 block first:mt-0";
-
-/** One compact list: per table, how many PK / FK / CHECK rules it carries. */
+/** What the database enforces, table by table, with the real names visible. */
 export function RulesGlance({ schema, nav }: { schema: SchemaModel; nav: TabProps["nav"] }) {
-  const grid = "grid grid-cols-[minmax(0,1fr)_repeat(3,minmax(72px,110px))] items-center gap-x-4";
   return (
     <Section
-      title="Rules at a glance"
-      tipTitle="Rules"
-      tip="These rules are checked by MySQL itself, so bad data is rejected before it is saved. Open an i to see the rule names."
+      id="rules"
+      title="Rules the database enforces"
+      tipTitle="Constraints"
+      tip="A constraint is a rule stored in the table definition. MySQL checks it on every INSERT and UPDATE, so even a buggy app cannot save bad data."
     >
-      <div className={`${grid} pb-2 text-[12px] text-faint`}>
-        <span>Table</span>
-        <span>PK</span>
-        <span>FK</span>
-        <span>CHECK</span>
-      </div>
+      <p className="-mt-2 mb-4 text-[13.5px] text-muted">
+        These are checked by MySQL on every change. Primary keys keep rows unique, foreign keys keep links valid, and CHECK
+        rules keep values sensible.
+      </p>
       <ul className="divide-y divide-line">
         {schema.tables.map((t) => (
-          <li key={t.name} className={`${grid} py-2.5 text-[13px]`}>
+          <li key={t.name} className="grid gap-x-6 gap-y-2 py-3 text-[13px] md:grid-cols-[150px_1fr]">
             <button
               type="button"
               onClick={() => nav.openTable(t.name)}
-              className="mono justify-self-start text-left text-ink hover:text-accent"
+              className="mono self-start justify-self-start text-left text-[13.5px] text-ink hover:text-accent"
             >
               {t.name}
             </button>
-            <Count n={t.primaryKey.length > 0 ? 1 : 0} tone="chip-accent" title="Primary key">
-              <span className={line}>
-                Made of <code>{t.primaryKey.join(", ")}</code>. Each row has a unique value here.
-              </span>
-            </Count>
-            <Count n={t.foreignKeys.length} tone="chip-info" title="Foreign keys">
-              {t.foreignKeys.map((f) => (
-                <span key={f.name} className={line}>
-                  <code>{f.columns.join(", ")}</code> points to <code>{f.refTable}</code>; {DELETE_WORDS[f.onDelete]}.
-                </span>
-              ))}
-            </Count>
-            <Count n={t.checks.length} tone="chip-warn" title="CHECK rules" align="end">
-              {t.checks.map((c) => (
-                <span key={c.name} className={line}>
-                  <code>{c.name}</code>: {readCheck(c.expression, t)}
-                </span>
-              ))}
-            </Count>
+            <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-[110px_1fr]">
+              <dt className="text-faint">Primary key</dt>
+              <dd className="mono text-[12.5px] text-ink">{t.primaryKey.join(", ")}</dd>
+              <dt className="text-faint">Links</dt>
+              <dd className="text-ink">
+                {t.foreignKeys.length === 0 ? (
+                  <span className="text-faint">none</span>
+                ) : (
+                  <ul className="space-y-1">
+                    {t.foreignKeys.map((f) => (
+                      <li key={f.name}>
+                        <span className="mono text-[12.5px]">{f.columns.join(", ")}</span> points to{" "}
+                        <span className="mono text-[12.5px]">{f.refTable}</span>
+                        <span className="text-muted">; {DELETE_WORDS[f.onDelete]}.</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </dd>
+              <dt className="text-faint">Checks</dt>
+              <dd className="text-ink">
+                {t.checks.length === 0 ? (
+                  <span className="text-faint">none</span>
+                ) : (
+                  <ul className="space-y-1">
+                    {t.checks.map((c) => (
+                      <li key={c.name}>{readCheck(c.expression, t)}</li>
+                    ))}
+                  </ul>
+                )}
+              </dd>
+            </dl>
           </li>
         ))}
       </ul>

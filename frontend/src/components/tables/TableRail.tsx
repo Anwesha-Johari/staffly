@@ -44,7 +44,7 @@ export function TableRail({
             tabIndex={active ? 0 : -1}
             onClick={() => onSelect(t.name)}
             className={`flex w-full cursor-pointer items-baseline justify-between gap-2 rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
-              active ? "bg-surface-2 text-ink" : "text-muted hover:bg-surface-2"
+              active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2"
             }`}
           >
             <span className="mono truncate">{t.name}</span>

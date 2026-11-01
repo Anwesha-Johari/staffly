@@ -105,7 +105,7 @@ export interface LiveState {
   checkedAt: string;
 }
 
-export type TabId = "overview" | "tables" | "library" | "plans" | "why" | "transactions";
+export type TabId = "overview" | "tables" | "plans" | "transactions" | "live";
 
 /** Navigation helpers handed to every tab so tabs can link to each other. */
 export interface DashboardNav {

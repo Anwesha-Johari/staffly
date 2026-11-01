@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import type { TabProps } from "@/lib/types";
+import { Explainer } from "../Explainer";
 import { InfoTip } from "../InfoTip";
 import { ColumnList } from "./ColumnList";
 import { DdlBlock } from "./DdlBlock";
 import { IndexesBlock } from "./IndexesBlock";
 import { RulesRows } from "./RulesRows";
+import { SampleRows } from "./SampleRows";
 import { TableRail } from "./TableRail";
 
-export function TablesTab({ schema, nav, selectedTable }: TabProps) {
+export function TablesTab({ schema, live, nav, selectedTable }: TabProps) {
   const has = (name: string | null): name is string => !!name && schema.tables.some((t) => t.name === name);
 
   const [selected, setSelected] = useState<string | null>(has(selectedTable) ? selectedTable : (schema.tables[0]?.name ?? null));
@@ -31,6 +33,20 @@ export function TablesTab({ schema, nav, selectedTable }: TabProps) {
   if (!table) return <div className="card p-5 text-muted">The schema contains no tables.</div>;
 
   return (
+    <div className="space-y-6">
+    <Explainer
+      title="Tables: where the data actually lives"
+      steps={[
+        "A table holds one kind of thing, like employees.",
+        "Each column has a type and rules.",
+        "Each row is one record.",
+        "Keys link rows in different tables.",
+      ]}
+      tryThis="Pick employees, then follow the department_id badge to the departments table."
+    >
+      A relational database stores everything in tables. The primary key (PK) identifies a row, a foreign key (FK) points to a
+      row in another table, and CHECK or UNIQUE rules block bad values before they are saved.
+    </Explainer>
     <div className="grid items-start gap-6 [grid-template-columns:200px_minmax(0,1fr)]">
       <aside className="sticky top-4 self-start" aria-label="Table list">
         <TableRail tables={schema.tables} selected={table.name} onSelect={setSelected} />
@@ -49,11 +65,14 @@ export function TablesTab({ schema, nav, selectedTable }: TabProps) {
             </InfoTip>
           </span>
         </header>
-        {table.purpose && <p className="mt-1 text-[13px] text-muted">{table.purpose}</p>}
+        {table.purpose && <p className="mt-1.5 text-[13.5px] text-ink">{table.purpose}</p>}
+        <p className="mt-1 text-[13px] text-muted">{relations(table)}</p>
 
         <div className="mt-5">
           <ColumnList table={table} onOpenTable={openTable} />
         </div>
+
+        <SampleRows table={table.name} live={live} />
 
         <RulesRows table={table} onOpenTable={openTable} />
 
@@ -63,5 +82,15 @@ export function TablesTab({ schema, nav, selectedTable }: TabProps) {
         </div>
       </section>
     </div>
+    </div>
   );
+}
+
+function relations(t: TabProps["schema"]["tables"][number]): string {
+  const to = [...new Set(t.foreignKeys.map((f) => f.refTable))];
+  const from = [...new Set(t.referencedBy.map((f) => f.table))];
+  const parts: string[] = [];
+  if (to.length) parts.push(`It points to ${to.join(", ")}.`);
+  if (from.length) parts.push(`${from.join(", ")} point${from.length === 1 ? "s" : ""} to it.`);
+  return parts.join(" ") || "It does not link to any other table.";
 }

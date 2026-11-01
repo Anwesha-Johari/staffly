@@ -41,7 +41,7 @@ const STAGES: { id: StageId; name: string; tip: string }[] = [
   },
 ];
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const plural = (n: number, word: string) => `${n} ${n === 1 ? word : /(s|x)$/.test(word) ? word + "es" : word + "s"}`;
 
 export function buildStages(q: LibraryQuery): StageDetail[] {
   const a = analyzeSql(q.sql);

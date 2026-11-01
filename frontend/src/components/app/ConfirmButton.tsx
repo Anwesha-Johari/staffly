@@ -7,15 +7,11 @@ function SubmitButton({
   label,
   danger,
   formAction,
-  name,
-  value,
   buttonRef,
 }: {
   label: ReactNode;
   danger: boolean;
   formAction?: (formData: FormData) => void | Promise<void>;
-  name?: string;
-  value?: string;
   buttonRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const { pending } = useFormStatus();
@@ -24,8 +20,6 @@ function SubmitButton({
       ref={buttonRef}
       type="submit"
       formAction={formAction}
-      name={name}
-      value={value}
       disabled={pending}
       className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
     >
@@ -97,14 +91,9 @@ export function ConfirmButton({
       <span className="text-[13px] text-muted" role="status">
         {message}
       </span>
-      <SubmitButton
-        label={confirmLabel}
-        danger={danger}
-        formAction={formAction}
-        name={name}
-        value={value}
-        buttonRef={confirmRef}
-      />
+      {/* A hidden field, not the button's own name/value: it reaches the server action reliably. */}
+      {name && value !== undefined && <input type="hidden" name={name} value={value} />}
+      <SubmitButton label={confirmLabel} danger={danger} formAction={formAction} buttonRef={confirmRef} />
       <button type="button" className="btn" onClick={() => setArmed(false)}>
         Cancel
       </button>
