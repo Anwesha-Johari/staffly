@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, CalendarCheck, Plane, Wallet, Database, LogOut, Menu, X, Building2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { LayoutDashboard, Users, CalendarCheck, Plane, Wallet, Database, Menu, X, Building2 } from "lucide-react";
 import { useSession, type Role } from "@/lib/session";
-import { Avatar, Badge, cx } from "@/components/ui";
+import { Avatar, cx } from "@/components/ui";
 
 const NAV: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: Role[] }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["Admin", "HR", "Employee"] },
@@ -28,22 +28,15 @@ export function Logo({ className }: { className?: string }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, ready, signOut } = useSession();
+  const { user } = useSession();
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => { if (ready && !user) router.replace("/"); }, [ready, user, router]);
   useEffect(() => setOpen(false), [pathname]);
 
-  const current = NAV.find((n) => pathname === n.href || pathname.startsWith(n.href + "/"));
-  useEffect(() => {
-    if (user && current && !current.roles.includes(user.accessRole)) router.replace("/dashboard");
-  }, [user, current, router]);
-
-  if (!ready || !user) {
-    return <div className="grid min-h-screen place-items-center"><div className="skeleton h-10 w-40" /></div>;
-  }
+  // Pages read the current date and other browser-only values, so render them client-side only.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  if (!user) return null;
   const items = NAV.filter((n) => n.roles.includes(user.accessRole));
 
   const sidebar = (
@@ -68,20 +61,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-      <div className="m-3 rounded-xl border border-line bg-surface-2/60 p-3">
-        <div className="flex items-center gap-3">
-          <Avatar name={user.employeeName} size={36} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{user.employeeName}</p>
-            <div className="mt-0.5"><Badge tone={user.accessRole === "Admin" ? "brand" : user.accessRole === "HR" ? "info" : "neutral"} dot={false}>{user.accessRole}</Badge></div>
-          </div>
-        </div>
-        <button
-          onClick={() => { signOut(); router.replace("/"); }}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface py-2 text-sm font-medium text-muted transition-colors hover:text-bad cursor-pointer"
-        >
-          <LogOut className="size-4" /> Sign out
-        </button>
+      <div className="m-3 flex items-center gap-3 rounded-xl border border-line bg-surface-2/60 p-3">
+        <Avatar name="Admin" size={36} />
+        <div className="min-w-0"><p className="text-sm font-medium">Admin</p><p className="text-xs text-muted">Full access</p></div>
       </div>
     </div>
   );
@@ -106,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-6xl">{mounted ? children : <div className="skeleton h-40" />}</div>
       </main>
     </div>
   );

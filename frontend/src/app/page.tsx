@@ -1,5 +1,5 @@
-import { LoginView } from "@/components/LoginView";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <LoginView />;
+  redirect("/dashboard");
 }
