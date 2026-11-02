@@ -1,3 +1,24 @@
+import fs from 'fs';
+import path from 'path';
+
+// Reuse the database settings the Python backend already uses. Looks for a .env in the
+// repo root and backend/ (next to the frontend folder) and fills in any DB_* variable
+// that is not already set. frontend/.env.local and real environment variables win.
+function loadSharedEnv() {
+  const roots = [process.cwd(), path.resolve(process.cwd(), '..'), path.resolve(process.cwd(), '../backend')];
+  for (const dir of roots) {
+    const file = path.join(dir, '.env');
+    let text: string;
+    try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^\s*(?:export\s+)?(DB_[A-Z_]+)\s*=\s*(.*?)\s*$/);
+      if (!m || process.env[m[1]] !== undefined) continue;
+      process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+}
+loadSharedEnv();
+
 import mysql, { Pool, PoolConnection, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 
 declare global {
